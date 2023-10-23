@@ -2,10 +2,12 @@ package com.blazing.malls;
 
 import android.Manifest;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -63,12 +65,6 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setGeolocationEnabled(true); // Enable Geolocation
         mWebView.addJavascriptInterface(new JavaScriptInterface(this), "Android");
 
-        // Handle copy, paste, and JavaScript interactions
-        mWebView.setWebChromeClient(new WebChromeClient());
-
-        // Set WebViewClient to handle URL redirects in the app
-        mWebView.setWebViewClient(new myWebViewClient());
-
         // Load the initial URL
         mWebView.loadUrl("https://www.blazingmalls.com");
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -106,10 +102,59 @@ public class MainActivity extends AppCompatActivity {
                     // You can redirect the user to the Telegram website or prompt them to install the app
                 }
                 return true; // URL handled by this WebViewClient for Telegram links
-            } else {
+            } else if (url.startsWith("https://wa.me/") || url.startsWith("whatsapp://")) {
+                openWhatsApp(view.getContext(), url);
+                return true; // The WhatsApp link is handled
+            } else if (isUpiPaymentLink(url)) {
+                if (!openUpiPaymentApp(view.getContext(), url)) {
+                    // UPI app is not installed, open in Chrome browser
+                    openInChromeBrowser(view.getContext(), url);
+                }
+                //  openUpiPaymentApp(view.getContext(), url);
+                return true; // The UPI link is handled
+            }else {
                 // Load other URLs in the WebView
                 view.loadUrl(url);
                 return true; // Other URLs handled by this WebViewClient
+            }
+        }
+        private void openInChromeBrowser(Context context, String url) {
+            Uri webpage = Uri.parse(url);
+            Intent intent = new Intent(Intent.ACTION_VIEW, webpage);
+            intent.setPackage("com.android.chrome"); // Specify the package name of Chrome browser
+
+            try {
+                context.startActivity(intent); // Open in Chrome browser
+            } catch (ActivityNotFoundException e) {
+                // Handle if Chrome browser is not installed or show an error message
+            }
+        }
+
+
+        private boolean openUpiPaymentApp(Context context, String url) {
+            Intent upiIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+
+            try {
+                context.startActivity(upiIntent); // Open UPI payment app
+                return true;
+            } catch (ActivityNotFoundException e) {
+                // UPI payment app is not installed
+                return false;
+            }
+        }
+
+        private boolean isUpiPaymentLink(String url) {
+            return url.startsWith("upi://") || url.startsWith("phonepe://") || url.startsWith("paytmmp://") || url.startsWith("tez://");
+        }
+
+        private void openWhatsApp(Context context, String url) {
+            Intent whatsappIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+
+            try {
+                context.startActivity(whatsappIntent); // Open WhatsApp
+            } catch (ActivityNotFoundException e) {
+                // Handle if WhatsApp is not installed or show an error message
+                Log.e("WhatsApp", "WhatsApp is not installed.");
             }
         }
 
