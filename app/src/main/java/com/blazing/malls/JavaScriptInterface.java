@@ -36,3 +36,4 @@ public class JavaScriptInterface {
         ((MainActivity) context).startActivityForResult(intent, MainActivity.FILECHOOSER_RESULT_CODE);
     }
 }
+
